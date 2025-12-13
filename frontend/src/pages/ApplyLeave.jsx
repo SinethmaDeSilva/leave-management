@@ -10,7 +10,10 @@ export default function ApplyLeave({ addLeave }) {
   });
 
   const [errors, setErrors] = useState({});
-  const [isSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get employee name from localStorage (fallback to 'N/A')
+  const employeeName = localStorage.getItem('employeeName') || 'N/A';
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -20,7 +23,7 @@ export default function ApplyLeave({ addLeave }) {
   function handleSubmit(e) {
     e.preventDefault();
 
-    // Validation
+    // Frontend validation
     const newErrors = {};
     if (!formData.leaveType) newErrors.leaveType = 'Please select a leave type';
     if (!formData.startDate) newErrors.startDate = 'Start date is required';
@@ -32,14 +35,26 @@ export default function ApplyLeave({ addLeave }) {
       return;
     }
 
-    const newLeave = { id: Date.now(), ...formData, status: 'Pending' };
+    setIsSubmitting(true);
 
-    addLeave(newLeave); // from props
+    // Create new leave object
+    const newLeave = {
+      id: Date.now(),
+      employee: employeeName,
+      ...formData,
+      status: 'Pending',
+    };
 
+    // Add leave to global list
+    addLeave(newLeave);
+
+    // Show success message
     toast.success('Leave request submitted successfully!');
 
+    // Reset form
     setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' });
     setErrors({});
+    setIsSubmitting(false);
   }
 
   return (
