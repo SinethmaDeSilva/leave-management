@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -12,6 +12,13 @@ export default function ApplyLeave({ addLeave }) {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:5000/api/leaves')
+      .then((res) => setLeaves(res.data))
+      .catch((err) => console.error(err));
+  }, []);
 
   // Get employee name from localStorage (fallback to 'N/A')
   const employeeName = localStorage.getItem('employeeName') || 'N/A';

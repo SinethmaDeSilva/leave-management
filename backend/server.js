@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import leaveRoutes from './routes/leaveRoutes.js';
+import authRoutes from './routes/auth.js';
 
 dotenv.config();
 connectDB();
@@ -13,6 +14,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/auth', authRoutes);
 
 // Test route
 app.get('/', (req, res) => {
