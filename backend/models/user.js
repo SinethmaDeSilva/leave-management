@@ -1,44 +1,36 @@
-// routes/auth.js
-import express from 'express';
-import User from '../models/user.js';
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
-const router = express.Router();
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
 
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
+    password: {
+      type: String,
+      required: true,
+    },
 
-  if (!username || !password) {
-    return res
-      .status(400)
-      .json({ success: false, message: 'All fields required' });
+    role: {
+      type: String,
+      enum: ['admin', 'employee'],
+      default: 'employee',
+    },
+  },
+  {
+    timestamps: true,
   }
+);
 
-  try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid credentials' });
-    }
+// Method to compare password during login
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res
-        .status(401)
-        .json({ success: false, message: 'Invalid credentials' });
-    }
+const User = mongoose.model('User', userSchema);
 
-    // Login successful
-    res.json({
-      success: true,
-      message: 'Login successful',
-      username: user.username,
-      role: user.role,
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-export default router;
+export default User;
