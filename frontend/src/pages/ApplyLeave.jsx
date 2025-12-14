@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 export default function ApplyLeave({ addLeave }) {
   const [formData, setFormData] = useState({
@@ -20,10 +21,9 @@ export default function ApplyLeave({ addLeave }) {
     setFormData({ ...formData, [name]: value });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    // Frontend validation
     const newErrors = {};
     if (!formData.leaveType) newErrors.leaveType = 'Please select a leave type';
     if (!formData.startDate) newErrors.startDate = 'Start date is required';
@@ -37,24 +37,36 @@ export default function ApplyLeave({ addLeave }) {
 
     setIsSubmitting(true);
 
-    // Create new leave object
-    const newLeave = {
-      id: Date.now(),
-      employee: employeeName,
-      ...formData,
-      status: 'Pending',
-    };
+    try {
+      const response = await axios.post('http://localhost:5000/api/leaves', {
+        employee: employeeName,
+        leaveType: formData.leaveType,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        reason: formData.reason,
+        status: 'Pending',
+      });
 
-    // Add leave to global list
-    addLeave(newLeave);
+      // Optional: sync frontend state with DB response
+      addLeave(response.data.leave);
 
-    // Show success message
-    toast.success('Leave request submitted successfully!');
+      toast.success('Leave request submitted successfully!');
 
-    // Reset form
-    setFormData({ leaveType: '', startDate: '', endDate: '', reason: '' });
-    setErrors({});
-    setIsSubmitting(false);
+      setFormData({
+        leaveType: '',
+        startDate: '',
+        endDate: '',
+        reason: '',
+      });
+      setErrors({});
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || 'Failed to submit leave request'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (

@@ -1,25 +1,39 @@
-import { toast } from 'react-toastify';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
-export default function AdminRequests({ myLeaves, updateLeaveStatus }) {
-  const handleAction = (id, status) => {
-    updateLeaveStatus(id, status);
+export default function AdminRequests() {
+  const [leaves, setLeaves] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    // Show toast feedback
-    toast.success(`Leave request ${status.toLowerCase()}!`);
-  };
+  // 1️⃣ Fetch all leave requests
+  useEffect(() => {
+    fetchLeaves();
+  }, []);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Pending':
-        return 'bg-yellow-300 text-gray-900';
-      case 'Approved':
-        return 'bg-green-500 text-white';
-      case 'Rejected':
-        return 'bg-red-500 text-white';
-      default:
-        return 'bg-gray-300 text-gray-900';
+  async function fetchLeaves() {
+    try {
+      const res = await axios.get('http://localhost:5000/api/leaves');
+      setLeaves(res.data.leaves);
+    } catch (error) {
+      console.error('Failed to fetch leaves', error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+
+  // 2️⃣ Approve / Reject
+  async function handleAction(id, status) {
+    try {
+      await axios.put(`http://localhost:5000/api/leaves/${id}`, { status });
+      fetchLeaves(); // refresh table
+    } catch (error) {
+      console.error('Failed to update leave', error);
+    }
+  }
+
+  if (loading) {
+    return <p className='p-6'>Loading leave requests...</p>;
+  }
 
   return (
     <div className='bg-white min-h-screen p-6 text-gray-900'>
@@ -27,54 +41,40 @@ export default function AdminRequests({ myLeaves, updateLeaveStatus }) {
         Admin Leave Requests
       </h1>
 
-      <div className='overflow-x-auto'>
-        <table className='w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm'>
+      {leaves.length === 0 ? (
+        <p>No leave requests found.</p>
+      ) : (
+        <table className='w-full border bg-gray-50 rounded shadow'>
           <thead className='bg-gray-200'>
             <tr>
-              <th className='p-3 border-b border-gray-300'>Employee</th>
-              <th className='p-3 border-b border-gray-300'>Leave Type</th>
-              <th className='p-3 border-b border-gray-300'>Start Date</th>
-              <th className='p-3 border-b border-gray-300'>End Date</th>
-              <th className='p-3 border-b border-gray-300'>Status</th>
-              <th className='p-3 border-b border-gray-300'>Action</th>
+              <th className='p-3'>Employee</th>
+              <th className='p-3'>Type</th>
+              <th className='p-3'>Start</th>
+              <th className='p-3'>End</th>
+              <th className='p-3'>Status</th>
+              <th className='p-3'>Action</th>
             </tr>
           </thead>
           <tbody>
-            {myLeaves.map((leave) => (
-              <tr key={leave.id} className='hover:bg-gray-100 transition'>
-                <td className='p-3 border-b border-gray-300'>
-                  {leave.employee || 'N/A'}
-                </td>
-                <td className='p-3 border-b border-gray-300'>
-                  {leave.leaveType}
-                </td>
-                <td className='p-3 border-b border-gray-300'>
-                  {leave.startDate}
-                </td>
-                <td className='p-3 border-b border-gray-300'>
-                  {leave.endDate}
-                </td>
-                <td className='p-3 border-b border-gray-300'>
-                  <span
-                    className={`px-3 py-1 rounded-full ${getStatusColor(
-                      leave.status
-                    )}`}
-                  >
-                    {leave.status}
-                  </span>
-                </td>
-                <td className='p-3 border-b border-gray-300 space-x-2'>
+            {leaves.map((leave) => (
+              <tr key={leave._id} className='text-center border-t'>
+                <td className='p-3'>{leave.employee}</td>
+                <td className='p-3'>{leave.leaveType}</td>
+                <td className='p-3'>{leave.startDate}</td>
+                <td className='p-3'>{leave.endDate}</td>
+                <td className='p-3 font-semibold'>{leave.status}</td>
+                <td className='p-3 space-x-2'>
                   {leave.status === 'Pending' && (
                     <>
                       <button
-                        onClick={() => handleAction(leave.id, 'Approved')}
-                        className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition'
+                        onClick={() => handleAction(leave._id, 'Approved')}
+                        className='bg-green-500 text-white px-3 py-1 rounded'
                       >
                         Approve
                       </button>
                       <button
-                        onClick={() => handleAction(leave.id, 'Rejected')}
-                        className='px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition'
+                        onClick={() => handleAction(leave._id, 'Rejected')}
+                        className='bg-red-500 text-white px-3 py-1 rounded'
                       >
                         Reject
                       </button>
@@ -85,7 +85,7 @@ export default function AdminRequests({ myLeaves, updateLeaveStatus }) {
             ))}
           </tbody>
         </table>
-      </div>
+      )}
     </div>
   );
 }
